@@ -51,6 +51,152 @@ const POWER_DESC  = {
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
+const SKIN_RETRO_COLORS = [
+  null,
+  '#4dd0e1','#ffd54f','#ba68c8','#81c784','#e57373','#90caf9','#ffb74d',
+  '#90a4ae','#ff5722','#ffeb3b','#e040fb','#66bb6a','#80deea','#ffffff',
+];
+
+const SKIN_NEON_COLORS = [
+  null,
+  '#00fff5','#ffe600','#bf00ff','#00ff87','#ff003c','#00b4ff','#ff8800',
+  '#aaaaff','#ff4400','#ffee00','#dd00ff','#00ee55','#00ddee','#ffffff',
+];
+
+const SKIN_PASTEL_COLORS = [
+  null,
+  '#b2ebf2','#fff9c4','#e1bee7','#c8e6c9','#ffcdd2','#bbdefb','#ffe0b2',
+  '#cfd8dc','#ffab91','#fff59d','#f48fb1','#a5d6a7','#b2dfdb','#f5f5f5',
+];
+
+const SKIN_PIXEL_COLORS = [
+  null,
+  '#26c6da','#ffca28','#ab47bc','#66bb6a','#ef5350','#42a5f5','#ffa726',
+  '#78909c','#f4511e','#fdd835','#ce93d8','#43a047','#4dd0e1','#eeeeee',
+];
+
+const SKINS = {
+  retro: {
+    id: 'retro',
+    label: 'RETRO',
+    colors: SKIN_RETRO_COLORS,
+    drawBlock(ctx, x, y, colorIdx, size, alpha) {
+      if (!colorIdx) return;
+      let color;
+      if (colorIdx === 14) {
+        const hue = (performance.now() / 15 + x * 37 + y * 23) % 360;
+        color = `hsl(${hue}, 100%, 65%)`;
+      } else {
+        color = this.colors[colorIdx];
+      }
+      ctx.globalAlpha = alpha ?? 1;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+      ctx.fillStyle = 'rgba(255,255,255,0.12)';
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, 4);
+      ctx.globalAlpha = 1;
+    }
+  },
+  neon: {
+    id: 'neon',
+    label: 'NEON',
+    colors: SKIN_NEON_COLORS,
+    drawBlock(ctx, x, y, colorIdx, size, alpha) {
+      if (!colorIdx) return;
+      let color;
+      if (colorIdx === 14) {
+        const hue = (performance.now() / 15 + x * 37 + y * 23) % 360;
+        color = `hsl(${hue}, 100%, 65%)`;
+      } else {
+        color = this.colors[colorIdx];
+      }
+      ctx.globalAlpha = alpha ?? 1;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = color;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
+      ctx.fillStyle = 'rgba(255,255,255,0.25)';
+      ctx.fillRect(x * size + 2, y * size + 2, size - 4, 3);
+      ctx.shadowBlur = 0;
+      ctx.globalAlpha = 1;
+    }
+  },
+  pastel: {
+    id: 'pastel',
+    label: 'PASTEL',
+    colors: SKIN_PASTEL_COLORS,
+    drawBlock(ctx, x, y, colorIdx, size, alpha) {
+      if (!colorIdx) return;
+      let color;
+      if (colorIdx === 14) {
+        const hue = (performance.now() / 15 + x * 37 + y * 23) % 360;
+        color = `hsl(${hue}, 70%, 80%)`;
+      } else {
+        color = this.colors[colorIdx];
+      }
+      ctx.globalAlpha = alpha ?? 1;
+      const r = 4;
+      const bx = x * size + 2, by = y * size + 2, bw = size - 4, bh = size - 4;
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(bx, by, bw, bh, r);
+      } else {
+        ctx.moveTo(bx + r, by);
+        ctx.lineTo(bx + bw - r, by);
+        ctx.arcTo(bx + bw, by, bx + bw, by + r, r);
+        ctx.lineTo(bx + bw, by + bh - r);
+        ctx.arcTo(bx + bw, by + bh, bx + bw - r, by + bh, r);
+        ctx.lineTo(bx + r, by + bh);
+        ctx.arcTo(bx, by + bh, bx, by + bh - r, r);
+        ctx.lineTo(bx, by + r);
+        ctx.arcTo(bx, by, bx + r, by, r);
+        ctx.closePath();
+      }
+      ctx.fill();
+      ctx.fillStyle = 'rgba(255,255,255,0.35)';
+      ctx.beginPath();
+      if (ctx.roundRect) {
+        ctx.roundRect(bx, by, bw, 4, [r, r, 0, 0]);
+      } else {
+        ctx.rect(bx, by, bw, 4);
+      }
+      ctx.fill();
+      ctx.globalAlpha = 1;
+    }
+  },
+  pixel: {
+    id: 'pixel',
+    label: 'PIXEL',
+    colors: SKIN_PIXEL_COLORS,
+    drawBlock(ctx, x, y, colorIdx, size, alpha) {
+      if (!colorIdx) return;
+      let color;
+      if (colorIdx === 14) {
+        const hue = (performance.now() / 15 + x * 37 + y * 23) % 360;
+        color = `hsl(${hue}, 100%, 55%)`;
+      } else {
+        color = this.colors[colorIdx];
+      }
+      ctx.globalAlpha = alpha ?? 1;
+      ctx.fillStyle = color;
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
+      // pixel dot texture: 2x2 dots every 4px
+      ctx.fillStyle = 'rgba(0,0,0,0.2)';
+      for (let dy = 2; dy < size - 2; dy += 4) {
+        for (let dx = 2; dx < size - 2; dx += 4) {
+          ctx.fillRect(x * size + dx, y * size + dy, 2, 2);
+        }
+      }
+      // bright top-left pixel border
+      ctx.fillStyle = 'rgba(255,255,255,0.3)';
+      ctx.fillRect(x * size + 1, y * size + 1, size - 2, 2);
+      ctx.fillRect(x * size + 1, y * size + 1, 2, size - 2);
+      ctx.globalAlpha = 1;
+    }
+  }
+};
+
 const canvas = document.getElementById('board');
 const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('next-canvas');
@@ -63,9 +209,15 @@ const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
 const powerCountdownEl = document.getElementById('power-countdown');
+const pauseBox = document.getElementById('pause-box');
+const gameoverBox = document.getElementById('gameover-box');
+const controlsBox = document.getElementById('controls-box');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let currentSkin;
 let powerUpCountdown, nextPowerUpQueued, frozenUntil, effectMsg, effectMsgUntil, effectMsgColor;
+let startLevel = 1;
+let currentCombo, maxCombo, maxLines, newHsIndex;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -147,6 +299,7 @@ function clearLines() {
   }
 
   if (cleared) {
+    if (cleared > maxLines) maxLines = cleared;
     lines += cleared;
     score += (LINE_SCORES[Math.min(cleared, 4)] || 0) * level;
     level = Math.floor(lines / 10) + 1;
@@ -244,10 +397,19 @@ function softDrop() {
 function lockPiece() {
   if (current.type >= 9) {
     activatePowerUp(current.type);
+    clearLines();
+    currentCombo = 0;
   } else {
     merge();
+    const linesBefore = lines;
+    clearLines();
+    if (lines > linesBefore) {
+      currentCombo++;
+      if (currentCombo > maxCombo) maxCombo = currentCombo;
+    } else {
+      currentCombo = 0;
+    }
   }
-  clearLines();
   spawn();
 }
 
@@ -274,20 +436,7 @@ function updateHUD() {
 }
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
-  if (!colorIndex) return;
-  let color;
-  if (colorIndex === 14) {
-    const hue = (performance.now() / 15 + x * 37 + y * 23) % 360;
-    color = `hsl(${hue}, 100%, 65%)`;
-  } else {
-    color = COLORS[colorIndex];
-  }
-  context.globalAlpha = alpha ?? 1;
-  context.fillStyle = color;
-  context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  context.fillStyle = 'rgba(255,255,255,0.12)';
-  context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
-  context.globalAlpha = 1;
+  currentSkin.drawBlock(context, x, y, colorIndex, size, alpha);
 }
 
 function drawGrid() {
@@ -387,11 +536,68 @@ function drawNext() {
   }
 }
 
+function loadScores() {
+  try { return JSON.parse(localStorage.getItem('tetris_scores') || '[]'); } catch { return []; }
+}
+
+function saveScore(name) {
+  const scores = loadScores();
+  const entry = { name: name || 'AAA', score, combo: maxCombo, lines };
+  scores.push(entry);
+  scores.sort((a, b) => b.score - a.score);
+  scores.splice(5);
+  newHsIndex = scores.findIndex(e => e === entry);
+  localStorage.setItem('tetris_scores', JSON.stringify(scores));
+  return scores;
+}
+
+function renderScores(scores, highlightIdx) {
+  const tbody = document.querySelector('#scores-table tbody');
+  tbody.innerHTML = '';
+  if (!scores.length) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;opacity:0.5">Sin records aún</td></tr>';
+    return;
+  }
+  scores.forEach((e, i) => {
+    const tr = document.createElement('tr');
+    if (i === highlightIdx) tr.classList.add('hs-new');
+    [i + 1, e.name, typeof e.score === 'number' ? e.score.toLocaleString() : '0', e.lines].forEach(val => {
+      const td = document.createElement('td');
+      td.textContent = val;
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
+  });
+}
+
 function endGame() {
   gameOver = true;
+  hsSubmitted = false;
   cancelAnimationFrame(animId);
+  gameoverBox.classList.remove('hidden');
+  pauseBox.classList.add('hidden');
+  controlsBox.classList.add('hidden');
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuacion: ${score.toLocaleString()}`;
+  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+
+  const nameForm = document.getElementById('hs-name-form');
+  const nameInput = document.getElementById('hs-name-input');
+  const scoresSection = document.getElementById('scores-section');
+
+  const existing = loadScores();
+  const qualifies = existing.length < 5 || score > (existing[4]?.score ?? 0);
+
+  if (qualifies) {
+    nameForm.classList.remove('hidden');
+    scoresSection.classList.add('hidden');
+    nameInput.value = '';
+    nameInput.focus();
+  } else {
+    nameForm.classList.add('hidden');
+    renderScores(existing, -1);
+    scoresSection.classList.remove('hidden');
+  }
+
   overlay.classList.remove('hidden');
 }
 
@@ -399,12 +605,17 @@ function togglePause() {
   if (gameOver) return;
   paused = !paused;
   if (!paused) {
+    gameoverBox.classList.add('hidden');
+    pauseBox.classList.add('hidden');
+    controlsBox.classList.add('hidden');
+    overlay.classList.add('hidden');
     lastTime = performance.now();
     loop(lastTime);
   } else {
     cancelAnimationFrame(animId);
-    overlayTitle.textContent = 'PAUSA';
-    overlayScore.textContent = '';
+    gameoverBox.classList.add('hidden');
+    controlsBox.classList.add('hidden');
+    pauseBox.classList.remove('hidden');
     overlay.classList.remove('hidden');
   }
 }
@@ -431,14 +642,26 @@ function loop(ts) {
   animId = requestAnimationFrame(loop);
 }
 
+function applySkin(id) {
+  currentSkin = SKINS[id] || SKINS.retro;
+  localStorage.setItem('tetris_skin', id);
+  // update canvas bg for neon skin (black) vs default
+  canvas.style.background = id === 'neon' ? '#000' : '';
+  nextCanvas.style.background = id === 'neon' ? '#000' : '';
+  // update skin button active states
+  document.querySelectorAll('.skin-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.skin === id);
+  });
+}
+
 function init() {
   board = createBoard();
   score = 0;
   lines = 0;
-  level = 1;
+  level = startLevel;
   paused = false;
   gameOver = false;
-  dropInterval = 1000;
+  dropInterval = Math.max(100, 1000 - (startLevel - 1) * 90);
   dropAccum = 0;
   lastTime = performance.now();
   powerUpCountdown = POWER_UP_INTERVAL;
@@ -447,6 +670,10 @@ function init() {
   effectMsg = null;
   effectMsgUntil = 0;
   effectMsgColor = null;
+  currentCombo = 0;
+  maxCombo = 0;
+  maxLines = 0;
+  newHsIndex = -1;
   next = randomPiece();
   spawn();
   updateHUD();
@@ -456,7 +683,7 @@ function init() {
 }
 
 document.addEventListener('keydown', e => {
-  if (e.code === 'KeyP') { togglePause(); return; }
+  if (e.code === 'KeyP' || e.code === 'Escape') { togglePause(); return; }
   if (paused || gameOver) return;
   switch (e.code) {
     case 'ArrowLeft':
@@ -482,10 +709,55 @@ document.addEventListener('keydown', e => {
 
 restartBtn.addEventListener('click', init);
 
+document.getElementById('resume-btn').addEventListener('click', togglePause);
+document.getElementById('restart-pause-btn').addEventListener('click', init);
+document.getElementById('controls-btn').addEventListener('click', () => {
+  pauseBox.classList.add('hidden');
+  controlsBox.classList.remove('hidden');
+});
+document.getElementById('controls-back-btn').addEventListener('click', () => {
+  controlsBox.classList.add('hidden');
+  pauseBox.classList.remove('hidden');
+});
+document.getElementById('start-level').addEventListener('change', e => {
+  startLevel = parseInt(e.target.value, 10);
+});
+
 const themeBtn = document.getElementById('theme-btn');
 themeBtn.addEventListener('click', () => {
   document.body.classList.toggle('light');
   themeBtn.textContent = document.body.classList.contains('light') ? 'MODO OSCURO' : 'MODO CLARO';
 });
+
+let hsSubmitted = false;
+
+function submitHighScore() {
+  if (hsSubmitted) return;
+  hsSubmitted = true;
+  const name = document.getElementById('hs-name-input').value.trim().slice(0, 12) || 'AAA';
+  document.getElementById('hs-name-form').classList.add('hidden');
+  const scores = saveScore(name);
+  renderScores(scores, newHsIndex);
+  document.getElementById('scores-section').classList.remove('hidden');
+}
+
+document.getElementById('hs-submit-btn').addEventListener('click', submitHighScore);
+
+document.getElementById('hs-name-input').addEventListener('keydown', e => {
+  if (e.code === 'Enter') submitHighScore();
+});
+
+document.getElementById('hs-reset-btn').addEventListener('click', () => {
+  if (confirm('¿Borrar todos los records?')) {
+    localStorage.removeItem('tetris_scores');
+    renderScores([], -1);
+  }
+});
+
+document.querySelectorAll('.skin-btn').forEach(btn => {
+  btn.addEventListener('click', () => applySkin(btn.dataset.skin));
+});
+
+applySkin(localStorage.getItem('tetris_skin') || 'retro');
 
 init();
