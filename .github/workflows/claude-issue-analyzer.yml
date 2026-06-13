@@ -101,6 +101,15 @@ jobs:
             Post a single structured comment using:
             gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "COMMENT_BODY"
 
+            The comment body MUST be valid GitHub Flavored Markdown (GFM). This means:
+            - Use `##` and `###` for headings (not HTML tags)
+            - Use `|col|col|` pipe syntax for tables, with a separator row `|---|---|`
+            - Use backticks for inline code and triple backticks for code blocks
+            - Use `**bold**` and `_italic_` for emphasis
+            - Numbered lists must start with `1.` and use consistent indentation
+            - Do NOT use raw HTML tags (e.g., `<br>`, `<b>`, `<table>`) — stick to pure Markdown
+            - Ensure the body string passed to `--body` is properly escaped so the shell does not misinterpret special characters
+
             The comment must follow this exact markdown structure:
 
             ## Automated Issue Analysis
