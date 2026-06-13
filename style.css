@@ -4,6 +4,10 @@
   padding: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 :root {
   --bg-body: #0f0f17;
   --bg-canvas: #1a1a25;
