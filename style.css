@@ -4,6 +4,10 @@
   padding: 0;
 }
 
+.hidden {
+  display: none !important;
+}
+
 :root {
   --bg-body: #0f0f17;
   --bg-canvas: #1a1a25;
@@ -230,4 +234,217 @@ kbd {
 
 #restart-btn:hover {
   opacity: 0.85;
+}
+
+/* ---- Pause menu ---- */
+.pause-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: 4px;
+  color: var(--color-accent);
+}
+
+.pause-menu {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.pause-menu button {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text);
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.pause-menu button:hover {
+  background: var(--color-accent);
+  color: var(--bg-body);
+  border-color: var(--color-accent);
+}
+
+.level-selector {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--color-text);
+}
+
+#start-level {
+  background: var(--bg-body);
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  color: var(--color-text);
+  padding: 4px 8px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* ---- Controls overlay panel ---- */
+.controls-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+}
+
+.controls-list li {
+  font-size: 13px;
+  color: var(--color-controls);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+#controls-back-btn {
+  width: 100%;
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 6px;
+  padding: 10px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  color: var(--color-text);
+  letter-spacing: 1px;
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+#controls-back-btn:hover {
+  background: var(--color-accent);
+  color: var(--bg-body);
+  border-color: var(--color-accent);
+}
+
+/* High scores */
+.hs-label {
+  font-size: 11px;
+  letter-spacing: 2px;
+  color: var(--color-label);
+  font-weight: 600;
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
+.hs-input-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: center;
+}
+
+#hs-name-input {
+  background: var(--color-kbd-bg);
+  border: 1px solid var(--color-kbd-border);
+  border-radius: 4px;
+  padding: 6px 10px;
+  color: var(--color-text);
+  font-family: 'Courier New', monospace;
+  font-size: 14px;
+  width: 130px;
+  outline: none;
+}
+
+#hs-name-input:focus {
+  border-color: var(--color-accent);
+}
+
+#hs-submit-btn {
+  background: var(--color-accent);
+  color: var(--bg-body);
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-weight: 700;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+#scores-table {
+  border-collapse: collapse;
+  width: 100%;
+  font-family: 'Courier New', monospace;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+#scores-table th {
+  color: var(--color-label);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 3px 6px;
+  border-bottom: 1px solid var(--color-border);
+  text-align: left;
+}
+
+#scores-table td {
+  padding: 4px 6px;
+  color: var(--color-text);
+}
+
+#scores-table tr.hs-new td {
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+.hs-reset {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 10px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  color: var(--color-label);
+  cursor: pointer;
+  margin-top: 4px;
+}
+
+.hs-reset:hover {
+  border-color: #e57373;
+  color: #e57373;
+}
+
+/* Skin selector */
+.skin-selector {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 4px;
+}
+
+.skin-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  border-radius: 4px;
+  padding: 4px 6px;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  color: var(--color-label);
+  transition: background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.skin-btn:hover {
+  background: var(--color-accent);
+  color: var(--bg-body);
+  border-color: var(--color-accent);
+}
+
+.skin-btn.active {
+  background: var(--color-accent);
+  color: var(--bg-body);
+  border-color: var(--color-accent);
 }

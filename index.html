@@ -49,16 +49,92 @@
         </div>
 
         <div class="panel-section">
+          <span class="label">SKIN</span>
+          <div class="skin-selector">
+            <button class="skin-btn active" data-skin="retro">RETRO</button>
+            <button class="skin-btn" data-skin="neon">NEON</button>
+            <button class="skin-btn" data-skin="pastel">PASTEL</button>
+            <button class="skin-btn" data-skin="pixel">PIXEL</button>
+          </div>
+        </div>
+
+        <div class="panel-section">
           <button id="theme-btn">MODO CLARO</button>
         </div>
       </aside>
     </div>
 
     <div id="overlay" class="overlay hidden">
-      <div class="overlay-box">
+      <!-- Game Over panel -->
+      <div class="overlay-box" id="gameover-box">
         <p id="overlay-title">GAME OVER</p>
         <p id="overlay-score"></p>
+
+        <!-- Name entry form (shown when score qualifies) -->
+        <div id="hs-name-form" class="hidden">
+          <p class="hs-label">¡Nuevo record! Ingresa tu nombre:</p>
+          <div class="hs-input-row">
+            <input type="text" id="hs-name-input" maxlength="12" placeholder="Tu nombre" autocomplete="off" />
+            <button id="hs-submit-btn">OK</button>
+          </div>
+        </div>
+
+        <!-- High scores table (shown after entry or when not qualifying) -->
+        <div id="scores-section" class="hidden">
+          <p class="hs-label">MEJORES PUNTUACIONES</p>
+          <table id="scores-table">
+            <thead>
+              <tr><th>#</th><th>Nombre</th><th>Puntos</th><th>Líneas</th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+          <button id="hs-reset-btn" class="hs-reset">Resetear records</button>
+        </div>
+
         <button id="restart-btn">Reiniciar</button>
+      </div>
+
+      <!-- Pause panel -->
+      <div class="overlay-box hidden" id="pause-box">
+        <p class="pause-title">PAUSA</p>
+        <div class="pause-menu">
+          <button id="resume-btn">&#9654; Reanudar</button>
+          <button id="restart-pause-btn">&#8634; Reiniciar</button>
+          <button id="controls-btn">? Controles</button>
+        </div>
+        <div class="level-selector">
+          <label for="start-level">Nivel inicial:</label>
+          <select id="start-level">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+            <option value="6">6</option>
+            <option value="7">7</option>
+            <option value="8">8</option>
+            <option value="9">9</option>
+            <option value="10">10</option>
+            <option value="11">11</option>
+            <option value="12">12</option>
+            <option value="13">13</option>
+            <option value="14">14</option>
+            <option value="15">15</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Controls panel -->
+      <div class="overlay-box hidden" id="controls-box">
+        <p class="pause-title">CONTROLES</p>
+        <ul class="controls-list">
+          <li><kbd>&#8592;</kbd><kbd>&#8594;</kbd> Mover</li>
+          <li><kbd>&#8593;</kbd> / <kbd>X</kbd> Rotar</li>
+          <li><kbd>&#8595;</kbd> Bajar despacio</li>
+          <li><kbd>Space</kbd> Ca&#237;da r&#225;pida</li>
+          <li><kbd>P</kbd> / <kbd>Esc</kbd> Pausa</li>
+        </ul>
+        <button id="controls-back-btn">&#8592; Volver</button>
       </div>
     </div>
   </div>
