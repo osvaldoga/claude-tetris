@@ -1,0 +1,128 @@
+name: Claude Issue Analyzer
+
+on:
+  issues:
+    types: [opened, edited]
+
+concurrency:
+  group: issue-analyzer-${{ github.event.issue.number }}
+  cancel-in-progress: true
+
+jobs:
+  analyze-issue:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Analyze issue with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          claude_args: '--allowed-tools Bash(gh issue *),Bash(gh label *)'
+          prompt: |
+            You are an automated issue analyst for a vanilla JavaScript Tetris game repository.
+
+            ## Repository structure
+            - index.html — DOM with <canvas id="board"> (300×600px) and <canvas id="next-canvas"> (120×120px)
+            - style.css — Dark retro arcade theme; JS only toggles `hidden` class on #overlay
+            - game.js — All game logic (~305 lines, 'use strict', no build step, no framework)
+
+            ## game.js key internals
+            - Constants: COLS=10, ROWS=20, BLOCK=30, COLORS[1-7], LINE_SCORES=[0,100,300,500,800]
+            - Mutable globals: board (2D ROWS×COLS array), current/next ({type,shape,x,y}), score, lines, level, paused, gameOver, dropInterval, dropAccum, lastTime, animId
+            - init()       — Resets all state, starts requestAnimationFrame loop
+            - loop(ts)     — Game tick: accumulates delta, drops piece when dropAccum >= dropInterval, calls draw()
+            - collide(shape, ox, oy) — Bounds + board-overlap check; used before every move/rotation
+            - tryRotate()  — Clockwise rotation with wall-kick offsets [0, -1, 1, -2, 2]
+            - lockPiece()  — merge() → clearLines() → spawn()
+            - clearLines() — Scans bottom-up, splices full rows, updates score/level/dropInterval
+            - ghostY()     — Projects current piece straight down for ghost rendering (alpha 0.2)
+            - draw()       — Clears canvas, draws grid + locked board + ghost + current piece
+            - Speed formula: dropInterval = Math.max(100, 1000 - (level - 1) * 90) ms; level++ every 10 lines
+            - Scoring: LINE_SCORES[cleared] * level; hard drop +2/cell; soft drop +1/row
+
+            ## The issue to analyze
+            Issue #${{ github.event.issue.number }}: ${{ github.event.issue.title }}
+
+            Body:
+            ${{ github.event.issue.body }}
+
+            ## Your tasks
+
+            ### Step 1 — Classify the issue
+            Read the title and body carefully. Map it to the correct labels from the lists below.
+
+            Standard labels (color in parentheses):
+            - bug (#d73a4a) — something broken or behaving incorrectly
+            - enhancement (#a2eeef) — new feature or improvement request
+            - question (#d876e3) — question or clarification needed
+            - documentation (#0075ca) — docs-only change needed
+            - good first issue (#7057ff) — self-contained, beginner-friendly
+
+            Project-specific labels (add alongside a standard label when relevant):
+            - gameplay (#e4e669) — piece mechanics, scoring, line clearing, levels, wall kicks, drop speed
+            - ui (#f9d0c4) — canvas rendering, CSS styling, overlay, ghost piece, next-piece preview
+            - performance (#c5def5) — FPS, requestAnimationFrame loop, rendering throughput
+
+            An issue may receive multiple labels (e.g., bug + gameplay).
+
+            ### Step 2 — Apply labels
+            First, create any labels that may not exist yet (|| true makes this idempotent):
+
+            gh label create "gameplay" --color "e4e669" --description "Piece mechanics, scoring, levels, drop speed" --repo ${{ github.repository }} || true
+            gh label create "ui" --color "f9d0c4" --description "Canvas rendering, CSS, overlays, visuals" --repo ${{ github.repository }} || true
+            gh label create "performance" --color "c5def5" --description "FPS, animation loop, rendering throughput" --repo ${{ github.repository }} || true
+            gh label create "bug" --color "d73a4a" --description "Something is broken" --repo ${{ github.repository }} || true
+            gh label create "enhancement" --color "a2eeef" --description "New feature or improvement" --repo ${{ github.repository }} || true
+            gh label create "question" --color "d876e3" --description "Question or clarification needed" --repo ${{ github.repository }} || true
+            gh label create "documentation" --color "0075ca" --description "Documentation only" --repo ${{ github.repository }} || true
+            gh label create "good first issue" --color "7057ff" --description "Good for newcomers" --repo ${{ github.repository }} || true
+
+            Then apply the chosen labels to the issue:
+            gh issue edit ${{ github.event.issue.number }} --add-label "LABEL1,LABEL2" --repo ${{ github.repository }}
+
+            ### Step 3 — Remove any previous analysis comment (for edited events)
+            If the triggering event is edited, find and delete any prior analysis comment posted by github-actions to avoid duplicates, before posting a new one:
+
+            gh issue comment list ${{ github.event.issue.number }} --repo ${{ github.repository }} --json id,author,body | grep -B2 '"login":"github-actions"' | grep '"id"' | awk -F: '{print $2}' | tr -d ', '
+
+            For each comment id returned, run:
+            gh issue comment delete COMMENT_ID --repo ${{ github.repository }} --yes
+
+            ### Step 4 — Post the diagnostic comment
+            Post a single structured comment using:
+            gh issue comment ${{ github.event.issue.number }} --repo ${{ github.repository }} --body "COMMENT_BODY"
+
+            The comment must follow this exact markdown structure:
+
+            ## Automated Issue Analysis
+
+            ### Problem Classification
+            [One sentence describing the category of this problem]
+
+            ### Affected Area
+            | File | Function / Section |
+            |------|--------------------|
+            | [file] | [specific function, variable, or CSS rule] |
+
+            ### Technical Root Cause
+            [2-4 sentences with precise technical analysis, referencing specific function names, variable names, and constant values from the codebase — e.g., "The dropInterval formula `Math.max(100, 1000 - (level-1) * 90)` reaches its floor of 100ms at level 11, after which increasing level has no effect on speed."]
+
+            ### Suggested Implementation Approach
+            [Numbered list of concrete steps, each referencing the specific function(s) to modify]
+
+            ### Estimated Complexity
+            **[Simple / Medium / Complex]** — [One sentence justification]
+
+            ---
+            *Automated analysis by Claude AI · Issue #${{ github.event.issue.number }}*
+
+            Be precise and technical. Reference actual function names, variable names, and constant values from the codebase. Avoid vague descriptions.
