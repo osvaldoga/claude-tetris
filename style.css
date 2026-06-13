@@ -118,6 +118,18 @@ body {
   border-radius: 4px;
 }
 
+/* ---- Power-up HUD ---- */
+.power-value {
+  font-size: 20px;
+}
+
+.power-hint {
+  font-size: 9px;
+  letter-spacing: 1px;
+  color: var(--color-label);
+  margin-top: -4px;
+}
+
 /* ---- Controles ---- */
 .controls ul {
   list-style: none;

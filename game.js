@@ -3,17 +3,24 @@
 const COLS = 10;
 const ROWS = 20;
 const BLOCK = 30;
+const POWER_UP_INTERVAL = 5;
 
 const COLORS = [
   null,
-  '#4dd0e1', // I - cyan
-  '#ffd54f', // O - yellow
-  '#ba68c8', // T - purple
-  '#81c784', // S - green
-  '#e57373', // Z - red
-  '#90caf9', // J - pale blue
-  '#ffb74d', // L - orange
-  '#90a4ae', // Tuerca - metallic blue-grey
+  '#4dd0e1', // 1 I - cyan
+  '#ffd54f', // 2 O - yellow
+  '#ba68c8', // 3 T - purple
+  '#81c784', // 4 S - green
+  '#e57373', // 5 Z - red
+  '#90caf9', // 6 J - pale blue
+  '#ffb74d', // 7 L - orange
+  '#90a4ae', // 8 Tuerca - metallic blue-grey
+  '#ff5722', // 9 Bomba
+  '#ffeb3b', // 10 Rayo
+  '#e040fb', // 11 Tinte
+  '#66bb6a', // 12 Gravedad
+  '#80deea', // 13 Congelar
+  '#ffffff',  // 14 Wildcard (rainbow)
 ];
 
 const PIECES = [
@@ -26,7 +33,21 @@ const PIECES = [
   [[6,0,0],[6,6,6],[0,0,0]],                  // J
   [[0,0,7],[7,7,7],[0,0,0]],                  // L
   [[8,8,8],[8,0,8],[8,8,8]],                  // Tuerca
+  [[0,9,0],[9,9,9],[0,9,0]],                  // Bomba - plus
+  [[10,0,10],[0,10,0],[10,0,10]],             // Rayo - X
+  [[11,11],[11,11]],                           // Tinte - square
+  [[12],[12],[12],[12]],                       // Gravedad - tall bar
+  [[13,13,13]],                                // Congelar - short bar
 ];
+
+const POWER_NAMES = {9:'BOMBA', 10:'RAYO', 11:'TINTE', 12:'GRAVEDAD', 13:'CONGELAR'};
+const POWER_DESC  = {
+  9: 'Destruye area 3x3',
+  10: 'Limpia fila+columna',
+  11: 'Convierte color a comodin',
+  12: 'Compacta el tablero',
+  13: 'Pausa caida 5s',
+};
 
 const LINE_SCORES = [0, 100, 300, 500, 800];
 
@@ -41,8 +62,10 @@ const overlay = document.getElementById('overlay');
 const overlayTitle = document.getElementById('overlay-title');
 const overlayScore = document.getElementById('overlay-score');
 const restartBtn = document.getElementById('restart-btn');
+const powerCountdownEl = document.getElementById('power-countdown');
 
 let board, current, next, score, lines, level, paused, gameOver, lastTime, dropAccum, dropInterval, animId;
+let powerUpCountdown, nextPowerUpQueued, frozenUntil, effectMsg, effectMsgUntil, effectMsgColor;
 
 function createBoard() {
   return Array.from({ length: ROWS }, () => new Array(COLS).fill(0));
@@ -50,6 +73,12 @@ function createBoard() {
 
 function randomPiece() {
   const type = Math.floor(Math.random() * 8) + 1;
+  const shape = PIECES[type].map(row => [...row]);
+  return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
+}
+
+function randomPowerUp() {
+  const type = Math.floor(Math.random() * 5) + 9;
   const shape = PIECES[type].map(row => [...row]);
   return { type, shape, x: Math.floor(COLS / 2) - Math.floor(shape[0].length / 2), y: 0 };
 }
@@ -97,6 +126,7 @@ function merge() {
 
 function clearLines() {
   let cleared = 0;
+
   for (let r = ROWS - 1; r >= 0; r--) {
     if (board[r].every(v => v !== 0)) {
       board.splice(r, 1);
@@ -105,13 +135,87 @@ function clearLines() {
       r++;
     }
   }
+
+  // Wildcard-assisted: row with wildcard + at most 2 empty cells clears
+  for (let r = ROWS - 1; r >= 0; r--) {
+    if (board[r].some(v => v === 14) && board[r].filter(v => v === 0).length <= 2) {
+      board.splice(r, 1);
+      board.unshift(new Array(COLS).fill(0));
+      cleared++;
+      r++;
+    }
+  }
+
   if (cleared) {
     lines += cleared;
-    score += (LINE_SCORES[cleared] || 0) * level;
+    score += (LINE_SCORES[Math.min(cleared, 4)] || 0) * level;
     level = Math.floor(lines / 10) + 1;
     dropInterval = Math.max(100, 1000 - (level - 1) * 90);
+    powerUpCountdown -= cleared;
+    if (powerUpCountdown <= 0) {
+      powerUpCountdown = POWER_UP_INTERVAL;
+      nextPowerUpQueued = true;
+    }
     updateHUD();
   }
+}
+
+function activatePowerUp(type) {
+  const cy = Math.min(ROWS - 1, current.y + Math.floor(current.shape.length / 2));
+  const cx = Math.min(COLS - 1, Math.max(0, current.x + Math.floor(current.shape[0].length / 2)));
+
+  switch (type) {
+    case 9: { // Bomba - destroys 3x3
+      for (let r = cy - 1; r <= cy + 1; r++)
+        for (let c = cx - 1; c <= cx + 1; c++)
+          if (r >= 0 && r < ROWS && c >= 0 && c < COLS)
+            board[r][c] = 0;
+      showEffect('BOMBA!', COLORS[9]);
+      break;
+    }
+    case 10: { // Rayo - clears row + column
+      board[cy] = new Array(COLS).fill(0);
+      for (let r = 0; r < ROWS; r++) board[r][cx] = 0;
+      showEffect('RAYO!', COLORS[10]);
+      break;
+    }
+    case 11: { // Tinte - most common color becomes wildcard
+      const count = new Array(9).fill(0);
+      for (let r = 0; r < ROWS; r++)
+        for (let c = 0; c < COLS; c++)
+          if (board[r][c] >= 1 && board[r][c] <= 8) count[board[r][c]]++;
+      let best = 0;
+      for (let i = 1; i <= 8; i++) if (count[i] > count[best]) best = i;
+      if (best > 0)
+        for (let r = 0; r < ROWS; r++)
+          for (let c = 0; c < COLS; c++)
+            if (board[r][c] === best) board[r][c] = 14;
+      showEffect('TINTE!', COLORS[11]);
+      break;
+    }
+    case 12: { // Gravedad - column gravity compaction
+      for (let c = 0; c < COLS; c++) {
+        const col = [];
+        for (let r = 0; r < ROWS; r++)
+          if (board[r][c] !== 0) col.push(board[r][c]);
+        for (let r = ROWS - 1; r >= 0; r--)
+          board[r][c] = col.length > 0 ? col.pop() : 0;
+      }
+      showEffect('GRAVEDAD!', COLORS[12]);
+      break;
+    }
+    case 13: { // Congelar - freeze drop for 5s
+      frozenUntil = performance.now() + 5000;
+      showEffect('CONGELADO!', COLORS[13]);
+      break;
+    }
+  }
+}
+
+function showEffect(msg, color) {
+  effectMsg = msg;
+  effectMsgColor = color;
+  effectMsgUntil = performance.now() + 1500;
 }
 
 function ghostY() {
@@ -138,14 +242,23 @@ function softDrop() {
 }
 
 function lockPiece() {
-  merge();
+  if (current.type >= 9) {
+    activatePowerUp(current.type);
+  } else {
+    merge();
+  }
   clearLines();
   spawn();
 }
 
 function spawn() {
   current = next;
-  next = randomPiece();
+  if (nextPowerUpQueued) {
+    nextPowerUpQueued = false;
+    next = randomPowerUp();
+  } else {
+    next = randomPiece();
+  }
   if (collide(current.shape, current.x, current.y)) {
     endGame();
     return;
@@ -157,15 +270,21 @@ function updateHUD() {
   scoreEl.textContent = score.toLocaleString();
   linesEl.textContent = lines;
   levelEl.textContent = level;
+  powerCountdownEl.textContent = nextPowerUpQueued ? '!' : powerUpCountdown;
 }
 
 function drawBlock(context, x, y, colorIndex, size, alpha) {
   if (!colorIndex) return;
-  const color = COLORS[colorIndex];
+  let color;
+  if (colorIndex === 14) {
+    const hue = (performance.now() / 15 + x * 37 + y * 23) % 360;
+    color = `hsl(${hue}, 100%, 65%)`;
+  } else {
+    color = COLORS[colorIndex];
+  }
   context.globalAlpha = alpha ?? 1;
   context.fillStyle = color;
   context.fillRect(x * size + 1, y * size + 1, size - 2, size - 2);
-  // highlight
   context.fillStyle = 'rgba(255,255,255,0.12)';
   context.fillRect(x * size + 1, y * size + 1, size - 2, 4);
   context.globalAlpha = 1;
@@ -192,22 +311,61 @@ function draw() {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
   drawGrid();
 
-  // board
   for (let r = 0; r < ROWS; r++)
     for (let c = 0; c < COLS; c++)
       drawBlock(ctx, c, r, board[r][c], BLOCK);
 
-  // ghost
   const gy = ghostY();
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
       if (current.shape[r][c])
         drawBlock(ctx, current.x + c, gy + r, current.shape[r][c], BLOCK, 0.2);
 
-  // current piece
   for (let r = 0; r < current.shape.length; r++)
     for (let c = 0; c < current.shape[r].length; c++)
-      drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
+      if (current.shape[r][c])
+        drawBlock(ctx, current.x + c, current.y + r, current.shape[r][c], BLOCK);
+
+  // Glow border for active power-up piece
+  if (current.type >= 9) {
+    ctx.strokeStyle = COLORS[current.type];
+    ctx.lineWidth = 2;
+    for (let r = 0; r < current.shape.length; r++)
+      for (let c = 0; c < current.shape[r].length; c++)
+        if (current.shape[r][c])
+          ctx.strokeRect(
+            (current.x + c) * BLOCK + 2,
+            (current.y + r) * BLOCK + 2,
+            BLOCK - 4, BLOCK - 4
+          );
+  }
+
+  const now = performance.now();
+
+  // Freeze overlay
+  if (frozenUntil > 0 && now < frozenUntil) {
+    ctx.fillStyle = 'rgba(128, 222, 234, 0.07)';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    const remaining = Math.ceil((frozenUntil - now) / 1000);
+    ctx.font = 'bold 13px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = COLORS[13];
+    ctx.fillText(`CONGELADO ${remaining}s`, canvas.width / 2, 18);
+    ctx.textAlign = 'left';
+  }
+
+  // Effect notification
+  if (effectMsg && now < effectMsgUntil) {
+    ctx.globalAlpha = Math.min(1, (effectMsgUntil - now) / 500);
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(0, canvas.height / 2 - 34, canvas.width, 60);
+    ctx.font = 'bold 30px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = effectMsgColor;
+    ctx.fillText(effectMsg, canvas.width / 2, canvas.height / 2 + 10);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
+  }
 }
 
 function drawNext() {
@@ -219,13 +377,21 @@ function drawNext() {
   for (let r = 0; r < shape.length; r++)
     for (let c = 0; c < shape[r].length; c++)
       drawBlock(nextCtx, offX + c, offY + r, shape[r][c], NB);
+
+  if (next.type >= 9) {
+    nextCtx.font = 'bold 9px Courier New';
+    nextCtx.textAlign = 'center';
+    nextCtx.fillStyle = COLORS[next.type];
+    nextCtx.fillText(POWER_NAMES[next.type], nextCanvas.width / 2, nextCanvas.height - 4);
+    nextCtx.textAlign = 'left';
+  }
 }
 
 function endGame() {
   gameOver = true;
   cancelAnimationFrame(animId);
   overlayTitle.textContent = 'GAME OVER';
-  overlayScore.textContent = `Puntuación: ${score.toLocaleString()}`;
+  overlayScore.textContent = `Puntuacion: ${score.toLocaleString()}`;
   overlay.classList.remove('hidden');
 }
 
@@ -246,14 +412,19 @@ function togglePause() {
 function loop(ts) {
   const dt = ts - lastTime;
   lastTime = ts;
-  dropAccum += dt;
-  if (dropAccum >= dropInterval) {
-    dropAccum = 0;
-    if (!collide(current.shape, current.x, current.y + 1)) {
-      current.y++;
-    } else {
-      lockPiece();
+  const frozen = frozenUntil > 0 && ts < frozenUntil;
+  if (!frozen) {
+    dropAccum += dt;
+    if (dropAccum >= dropInterval) {
+      dropAccum = 0;
+      if (!collide(current.shape, current.x, current.y + 1)) {
+        current.y++;
+      } else {
+        lockPiece();
+      }
     }
+  } else {
+    dropAccum = 0;
   }
   if (gameOver) return;
   draw();
@@ -270,6 +441,12 @@ function init() {
   dropInterval = 1000;
   dropAccum = 0;
   lastTime = performance.now();
+  powerUpCountdown = POWER_UP_INTERVAL;
+  nextPowerUpQueued = false;
+  frozenUntil = 0;
+  effectMsg = null;
+  effectMsgUntil = 0;
+  effectMsgColor = null;
   next = randomPiece();
   spawn();
   updateHUD();
