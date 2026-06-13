@@ -115,9 +115,9 @@ const SKINS = {
       ctx.shadowColor = color;
       ctx.fillStyle = color;
       ctx.fillRect(x * size + 2, y * size + 2, size - 4, size - 4);
+      ctx.shadowBlur = 0;
       ctx.fillStyle = 'rgba(255,255,255,0.25)';
       ctx.fillRect(x * size + 2, y * size + 2, size - 4, 3);
-      ctx.shadowBlur = 0;
       ctx.globalAlpha = 1;
     }
   },
@@ -652,6 +652,7 @@ function applySkin(id) {
   document.querySelectorAll('.skin-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.skin === id);
   });
+  if (typeof next !== 'undefined' && next) drawNext();
 }
 
 function init() {
